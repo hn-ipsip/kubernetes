@@ -2,19 +2,19 @@
 
 ###docker-ce install###
 apt update
-apt install apt-transport-https ca-certificates curl software-properties-common
+apt install --assume-yes apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 apt update
-apt install docker-ce
+apt install --assume-yes docker-ce
 
 ###Ansible install###
 echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" >> /etc/apt/sources.list
-apt-get install dirmngr --install-recommends
+apt-get --assume-yes install dirmngr --install-recommends
 apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
 add-apt-repository universe
 apt update
-apt install ansible
+apt install --assume-yes ansible
 
 ###K8s install###
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
@@ -22,7 +22,7 @@ cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get install -y kubelet kubeadm kubectl
+apt-get --assume-yes install -y kubelet kubeadm kubectl
 #apt-mark hold kubelet kubeadm kubectl
 ##Turnoff swap##
 swapoff -a
