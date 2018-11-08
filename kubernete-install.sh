@@ -3,11 +3,16 @@
 ###docker-ce install###
 apt update
 apt install --assume-yes apt-transport-https ca-certificates curl software-properties-common
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
-apt-key fingerprint 0EBFCD88
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+cat <<EOF >/etc/apt/sources.list
+deb http://archive.ubuntu.com/ubuntu bionic main universe
+deb http://archive.ubuntu.com/ubuntu bionic-security main universe
+deb http://archive.ubuntu.com/ubuntu bionic-updates main universe
+EOF
+#curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+#apt-key fingerprint 0EBFCD88
+#add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 apt update
-apt install --assume-yes docker-ce=17.09.0~ce-0~ubuntu
+apt install --assume-yes docker.io
 
 ###Ansible install###
 echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" >> /etc/apt/sources.list
