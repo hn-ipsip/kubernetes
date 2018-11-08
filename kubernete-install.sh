@@ -4,9 +4,10 @@
 apt update
 apt install --assume-yes apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+apt-key fingerprint 0EBFCD88
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 apt update
-apt install --assume-yes docker-ce
+apt install --assume-yes docker-ce=17.09.0~ce-0~ubuntu
 
 ###Ansible install###
 echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" >> /etc/apt/sources.list
@@ -39,7 +40,7 @@ KUBECONFIG=/etc/kubernetes/admin.conf kubectl apply -f https://raw.githubusercon
 ##allow master run pod -> make tiller-deploy ready##
 kubectl taint nodes --all node-role.kubernetes.io/master-
 
-sleep 40
+sleep 50
 
 ###Helm install###
 curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > get_helm.sh
