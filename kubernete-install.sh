@@ -23,10 +23,10 @@ deb https://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
 apt-get install -y kubelet kubeadm kubectl
-apt-mark hold kubelet kubeadm kubectl
+#apt-mark hold kubelet kubeadm kubectl
+##Turnoff swap##
 swapoff -a
 sed -i '/ swap / s/^/#/' /etc/fstab
-
 ##provide pod-network is needed##
 kubeadm init --pod-network-cidr 10.10.10.0/24 
 ##after init##
@@ -46,11 +46,11 @@ curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > get_helm.s
 chmod 700 get_helm.sh
 ./get_helm.sh
 helm init
-
+##Upgrade helm##
 kubectl create -f /root/kubernetes/awx/rbac-config.yaml
 helm init --service-account tiller --upgrade
-
-#set storage class "standard" to default storage class
+##set storage class "standard" to default storage class##
+kubectl create -f /root/kubernetes/awx/sc-pv.yaml
 kubectl patch storageclass standard -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
 ###AWX install###
@@ -60,7 +60,7 @@ mkdir /root/projects
 chmod 755 -R /root/projects
 cd /root/kubernetes/awx/installer/
 
-#sed -i "s/stable\/\postgresql/stable\/\postgresql --set persistence.enabled=false/g" /root/awx/installer/roles/kubernetes/tasks/main.yml
-#plus modify volumes /etc/ansible and /var/libe/awx/projects mount to awx-web and awx-celery in awx/installer/roles/kubernetes/templates/deployment.yml.j2
+##sed -i "s/stable\/\postgresql/stable\/\postgresql --set persistence.enabled=false/g" /root/awx/installer/roles/kubernetes/tasks/main.yml
+##plus modify volumes /etc/ansible and /var/libe/awx/projects mount to awx-web and awx-celery in awx/installer/roles/kubernetes/templates/deployment.yml.j2
 
 ansible-playbook -i inventory install.yml
