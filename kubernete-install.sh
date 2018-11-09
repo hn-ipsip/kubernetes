@@ -56,7 +56,6 @@ echo "KUBERNETES INIT DONE................................"
 mkdir -p $HOME/.kube
 cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 chown $(id -u):$(id -g) $HOME/.kube/config
-export KUBECONFIG=/etc/kubernetes/admin.conf
 ##Install pod-network kube-router##
 echo ""
 echo "KUBE-ROUTER INSTALLING................................"
@@ -71,9 +70,12 @@ echo "TAINT NODE DONE................................"
 ###Helm install###
 echo ""
 echo "HELM INSTALLING................................"
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > /root/get_helm.sh
-chmod 700 /root/get_helm.sh
-bash /root/get_helm.sh
+wget https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz
+tar -zxvf helm-v2.11.0-linux-amd64.tar.gz
+mv linux-amd64/helm /usr/local/bin/helm
+#curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > /root/get_helm.sh
+#chmod 700 /root/get_helm.sh
+#bash /root/get_helm.sh
 helm init
 ##Upgrade helm##
 kubectl create -f /root/kubernetes/awx/rbac-config.yaml
