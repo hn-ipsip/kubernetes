@@ -23,12 +23,9 @@ echo "DOCKER DONE................................"
 echo ""
 echo "ANSIBLE INSTALLING................................"
 echo ""
-echo "deb http://ppa.launchpad.net/ansible/ansible/ubuntu trusty main" >> /etc/apt/sources.list
-apt-get --assume-yes install dirmngr --install-recommends
-apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 93C4A3FD7BB9C367
-add-apt-repository universe
+apt-add-repository ppa:ansible/ansible
 apt update
-apt install --assume-yes ansible
+apt install ansible -y
 echo ""
 echo "ANSIBLE DONE................................"
 
