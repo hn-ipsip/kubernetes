@@ -60,9 +60,9 @@ echo -n "TAINT NODE DONE................................"
 
 ###Helm install###
 echo -n "HELM INSTALLING................................"
-curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > get_helm.sh
-chmod 700 get_helm.sh
-./get_helm.sh
+curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > /root/get_helm.sh
+chmod 700 /root/get_helm.sh
+bash /root/get_helm.sh
 helm init
 ##Upgrade helm##
 kubectl create -f /root/kubernetes/awx/rbac-config.yaml
