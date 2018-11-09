@@ -32,9 +32,9 @@ echo "ANSIBLE DONE................................"
 ###K8s install###
 echo ""
 echo "KUBERNETES INSTALLING................................"
-curl -s http://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
+curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
 cat <<EOF >>/etc/apt/sources.list.d/kubernetes.list
-deb https://apt.kubernetes.io/ kubernetes-xenial main
+deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
 apt-get --assume-yes install kubelet kubeadm kubectl
