@@ -16,6 +16,8 @@ EOF
 apt update
 apt install --assume-yes docker.io python-pip
 pip install docker
+apt install nodejs npm -y
+npm install npm --global
 echo ""
 echo "DOCKER DONE................................"
 
@@ -49,6 +51,7 @@ sed -i '/ swap / s/^/#/' /etc/fstab
 ##provide pod-network is needed##
 echo ""
 echo "KUBERNETES INIT................................"
+sysctl net.bridge.bridge-nf-call-iptables=1
 kubeadm init --pod-network-cidr 10.10.10.0/24 
 echo ""
 echo "KUBERNETES INIT DONE................................"
@@ -70,9 +73,10 @@ echo "TAINT NODE DONE................................"
 ###Helm install###
 echo ""
 echo "HELM INSTALLING................................"
-wget https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz
-tar -zxvf helm-v2.11.0-linux-amd64.tar.gz
+wget https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz >/root/
+tar -zxvf /root/helm-v2.11.0-linux-amd64.tar.gz
 mv linux-amd64/helm /usr/local/bin/helm
+rm -rf /root/helm-v2.11.0-linux-amd64.tar.gz /root/linux-amd64/helm
 #curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > /root/get_helm.sh
 #chmod 700 /root/get_helm.sh
 #bash /root/get_helm.sh
