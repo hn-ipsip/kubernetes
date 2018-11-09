@@ -825,7 +825,12 @@ class BaseTask(object):
         return False
 
     def build_inventory(self, instance, **kwargs):
-        json_data = json.dumps(instance.inventory.get_script_data(hostvars=True))
+        script_params = dict(hostvars=True)
+        if hasattr(instance, 'job_slice_number'):
+            script_params['slice_number'] = instance.job_slice_number
+            script_params['slice_count'] = instance.job_slice_count
+        script_data = instance.inventory.get_script_data(**script_params)
+        json_data = json.dumps(script_data)
         handle, path = tempfile.mkstemp(dir=kwargs.get('private_data_dir', None))
         f = os.fdopen(handle, 'w')
         f.write('#! /usr/bin/env python\n# -*- coding: utf-8 -*-\nprint %r\n' % json_data)
@@ -1227,9 +1232,7 @@ class RunJob(BaseTask):
         # Set environment variables for cloud credentials.
         cred_files = kwargs.get('private_data_files', {}).get('credentials', {})
         for cloud_cred in job.cloud_credentials:
-            if cloud_cred and cloud_cred.kind == 'gce':
-                env['GCE_PEM_FILE_PATH'] = cred_files.get(cloud_cred, '')
-            elif cloud_cred and cloud_cred.kind == 'openstack':
+            if cloud_cred and cloud_cred.kind == 'openstack':
                 env['OS_CLIENT_CONFIG_FILE'] = cred_files.get(cloud_cred, '')
 
         for network_cred in job.network_credentials:
@@ -1800,10 +1803,6 @@ class RunInventoryUpdate(BaseTask):
         """
         private_data = {'credentials': {}}
         credential = inventory_update.get_cloud_credential()
-        # If this is GCE, return the RSA key
-        if inventory_update.source == 'gce':
-            private_data['credentials'][credential] = decrypt_field(credential, 'ssh_key_data')
-            return private_data
 
         if inventory_update.source == 'openstack':
             openstack_auth = dict(auth_url=credential.host,
@@ -2036,7 +2035,6 @@ class RunInventoryUpdate(BaseTask):
             'ec2': 'EC2_INI_PATH',
             'vmware': 'VMWARE_INI_PATH',
             'azure_rm': 'AZURE_INI_PATH',
-            'gce': 'GCE_PEM_FILE_PATH',
             'openstack': 'OS_CLIENT_CONFIG_FILE',
             'satellite6': 'FOREMAN_INI_PATH',
             'cloudforms': 'CLOUDFORMS_INI_PATH'
