@@ -5,7 +5,8 @@ echo ""
 echo "DOCKER INSTALLING................................"
 apt update
 apt install --assume-yes apt-transport-https ca-certificates curl software-properties-common
-cat <<EOF >/etc/apt/sources.list
+mv /etc/apt/sources.list /etc/apt/sources.list.old
+cat <<EOF >>/etc/apt/sources.list
 deb http://archive.ubuntu.com/ubuntu bionic main universe
 deb http://archive.ubuntu.com/ubuntu bionic-security main universe
 deb http://archive.ubuntu.com/ubuntu bionic-updates main universe
@@ -14,8 +15,7 @@ EOF
 #apt-key fingerprint 0EBFCD88
 #add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
 apt update
-apt install --assume-yes docker.io python-pip
-pip install docker
+apt install -y docker.io=17.12.1-0ubuntu1 
 apt install nodejs npm -y
 npm install npm --global
 echo ""
@@ -47,7 +47,7 @@ echo "KUBERNETES DONE................................"
 echo ""
 echo "TURN OFF SWAP................................"
 swapoff -a
-sed -i '/ swap / s/^/#/' /etc/fstab
+sed -i '/swap/d' /etc/fstab
 ##provide pod-network is needed##
 echo ""
 echo "KUBERNETES INIT................................"
@@ -98,5 +98,6 @@ chmod 755 -R /root/projects
 
 ##sed -i "s/stable\/\postgresql/stable\/\postgresql --set persistence.enabled=false/g" /root/awx/installer/roles/kubernetes/tasks/main.yml
 ##plus modify volumes /etc/ansible and /var/libe/awx/projects mount to awx-web and awx-celery in awx/installer/roles/kubernetes/templates/deployment.yml.j2
-cd /root/kubernetes/awx/installer/
-ansible-playbook -i inventory install.yml
+
+#cd /root/kubernetes/awx/installer/
+#ansible-playbook -i inventory install.yml
