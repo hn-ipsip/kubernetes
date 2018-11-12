@@ -22,7 +22,7 @@ web_mem_request: 1
 web_cpu_request: 500
 
 task_mem_request: 2
-task_cpu_request: 1500
+task_cpu_request: 1000
 
 rabbitmq_mem_request: 2
 rabbitmq_cpu_request: 500

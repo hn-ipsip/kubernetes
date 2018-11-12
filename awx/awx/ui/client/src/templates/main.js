@@ -409,33 +409,34 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                 workflowMaker = {
                     name: 'templates.editWorkflowJobTemplate.workflowMaker',
                     url: '/workflow-maker',
+                    // ncyBreadcrumb: {
+                    //     label: 'WORKFLOW MAKER'
+                    // },
                     data: {
                         formChildState: true
                     },
                     params: {
-                        wf_maker_template_search: {
+                        job_template_search: {
                             value: {
-                                order_by: 'name',
-                                page_size: '10',
-                                role_level: 'execute_role',
-                                type: 'workflow_job_template,job_template'
+                                page_size: '5',
+                                order_by: 'name'
                             },
                             squash: false,
                             dynamic: true
                         },
-                        wf_maker_project_search: {
+                        project_search: {
                             value: {
-                                order_by: 'name',
-                                page_size: '10'
+                                page_size: '5',
+                                order_by: 'name'
                             },
                             squash: true,
                             dynamic: true
                         },
-                        wf_maker_inventory_source_search: {
+                        inventory_source_search: {
                             value: {
+                                page_size: '5',
                                 not__source: '',
-                                order_by: 'name',
-                                page_size: '10'
+                                order_by: 'name'
                             },
                             squash: true,
                             dynamic: true
@@ -466,14 +467,14 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                         $scope[`${list.iterator}_dataset`] = Dataset.data;
                                         $scope[list.name] = $scope[`${list.iterator}_dataset`].results;
 
-                                        $scope.$watch('wf_maker_templates', function(){
+                                        $scope.$watch('job_templates', function(){
                                             if($scope.selectedTemplate){
-                                                $scope.wf_maker_templates.forEach(function(row, i) {
+                                                $scope.job_templates.forEach(function(row, i) {
                                                     if(row.id === $scope.selectedTemplate.id) {
-                                                        $scope.wf_maker_templates[i].checked = 1;
+                                                        $scope.job_templates[i].checked = 1;
                                                     }
                                                     else {
-                                                        $scope.wf_maker_templates[i].checked = 0;
+                                                        $scope.job_templates[i].checked = 0;
                                                     }
                                                 });
                                             }
@@ -482,9 +483,9 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
 
                                     $scope.toggle_row = function(selectedRow) {
                                         if ($scope.workflowJobTemplateObj.summary_fields.user_capabilities.edit) {
-                                            $scope.wf_maker_templates.forEach(function(row, i) {
+                                            $scope.job_templates.forEach(function(row, i) {
                                                 if (row.id === selectedRow.id) {
-                                                    $scope.wf_maker_templates[i].checked = 1;
+                                                    $scope.job_templates[i].checked = 1;
                                                     $scope.selection[list.iterator] = {
                                                         id: row.id,
                                                         name: row.name
@@ -497,27 +498,27 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                     };
 
                                     $scope.$watch('selectedTemplate', () => {
-                                        $scope.wf_maker_templates.forEach(function(row, i) {
-                                            if(_.has($scope, 'selectedTemplate.id') && row.id === $scope.selectedTemplate.id) {
-                                                $scope.wf_maker_templates[i].checked = 1;
+                                        $scope.job_templates.forEach(function(row, i) {
+                                            if(_.hasIn($scope, 'selectedTemplate.id') && row.id === $scope.selectedTemplate.id) {
+                                                $scope.job_templates[i].checked = 1;
                                             }
                                             else {
-                                                $scope.wf_maker_templates[i].checked = 0;
+                                                $scope.job_templates[i].checked = 0;
                                             }
                                         });
                                     });
 
                                     $scope.$watch('activeTab', () => {
                                         if(!$scope.activeTab || $scope.activeTab !== "jobs") {
-                                            $scope.wf_maker_templates.forEach(function(row, i) {
-                                                $scope.wf_maker_templates[i].checked = 0;
+                                            $scope.job_templates.forEach(function(row, i) {
+                                                $scope.job_templates[i].checked = 0;
                                             });
                                         }
                                     });
 
                                     $scope.$on('clearWorkflowLists', function() {
-                                        $scope.wf_maker_templates.forEach(function(row, i) {
-                                            $scope.wf_maker_templates[i].checked = 0;
+                                        $scope.job_templates.forEach(function(row, i) {
+                                            $scope.job_templates[i].checked = 0;
                                         });
                                     });
                                 }
@@ -543,14 +544,14 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                         $scope[`${list.iterator}_dataset`] = Dataset.data;
                                         $scope[list.name] = $scope[`${list.iterator}_dataset`].results;
 
-                                        $scope.$watch('wf_maker_inventory_sources', function(){
+                                        $scope.$watch('workflow_inventory_sources', function(){
                                             if($scope.selectedTemplate){
-                                                $scope.wf_maker_inventory_sources.forEach(function(row, i) {
+                                                $scope.workflow_inventory_sources.forEach(function(row, i) {
                                                     if(row.id === $scope.selectedTemplate.id) {
-                                                        $scope.wf_maker_inventory_sources[i].checked = 1;
+                                                        $scope.workflow_inventory_sources[i].checked = 1;
                                                     }
                                                     else {
-                                                        $scope.wf_maker_inventory_sources[i].checked = 0;
+                                                        $scope.workflow_inventory_sources[i].checked = 0;
                                                     }
                                                 });
                                             }
@@ -559,9 +560,9 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
 
                                     $scope.toggle_row = function(selectedRow) {
                                         if ($scope.workflowJobTemplateObj.summary_fields.user_capabilities.edit) {
-                                            $scope.wf_maker_inventory_sources.forEach(function(row, i) {
+                                            $scope.workflow_inventory_sources.forEach(function(row, i) {
                                                 if (row.id === selectedRow.id) {
-                                                    $scope.wf_maker_inventory_sources[i].checked = 1;
+                                                    $scope.workflow_inventory_sources[i].checked = 1;
                                                     $scope.selection[list.iterator] = {
                                                         id: row.id,
                                                         name: row.name
@@ -574,27 +575,27 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                     };
 
                                     $scope.$watch('selectedTemplate', () => {
-                                        $scope.wf_maker_inventory_sources.forEach(function(row, i) {
+                                        $scope.workflow_inventory_sources.forEach(function(row, i) {
                                             if(_.hasIn($scope, 'selectedTemplate.id') && row.id === $scope.selectedTemplate.id) {
-                                                $scope.wf_maker_inventory_sources[i].checked = 1;
+                                                $scope.workflow_inventory_sources[i].checked = 1;
                                             }
                                             else {
-                                                $scope.wf_maker_inventory_sources[i].checked = 0;
+                                                $scope.workflow_inventory_sources[i].checked = 0;
                                             }
                                         });
                                     });
 
                                     $scope.$watch('activeTab', () => {
                                         if(!$scope.activeTab || $scope.activeTab !== "inventory_sync") {
-                                            $scope.wf_maker_inventory_sources.forEach(function(row, i) {
-                                                $scope.wf_maker_inventory_sources[i].checked = 0;
+                                            $scope.workflow_inventory_sources.forEach(function(row, i) {
+                                                $scope.workflow_inventory_sources[i].checked = 0;
                                             });
                                         }
                                     });
 
                                     $scope.$on('clearWorkflowLists', function() {
-                                        $scope.wf_maker_inventory_sources.forEach(function(row, i) {
-                                            $scope.wf_maker_inventory_sources[i].checked = 0;
+                                        $scope.workflow_inventory_sources.forEach(function(row, i) {
+                                            $scope.workflow_inventory_sources[i].checked = 0;
                                         });
                                     });
                                 }
@@ -620,14 +621,14 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                         $scope[`${list.iterator}_dataset`] = Dataset.data;
                                         $scope[list.name] = $scope[`${list.iterator}_dataset`].results;
 
-                                        $scope.$watch('wf_maker_projects', function(){
+                                        $scope.$watch('projects', function(){
                                             if($scope.selectedTemplate){
-                                                $scope.wf_maker_projects.forEach(function(row, i) {
+                                                $scope.projects.forEach(function(row, i) {
                                                     if(row.id === $scope.selectedTemplate.id) {
-                                                        $scope.wf_maker_projects[i].checked = 1;
+                                                        $scope.projects[i].checked = 1;
                                                     }
                                                     else {
-                                                        $scope.wf_maker_projects[i].checked = 0;
+                                                        $scope.projects[i].checked = 0;
                                                     }
                                                 });
                                             }
@@ -636,9 +637,9 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
 
                                     $scope.toggle_row = function(selectedRow) {
                                         if ($scope.workflowJobTemplateObj.summary_fields.user_capabilities.edit) {
-                                            $scope.wf_maker_projects.forEach(function(row, i) {
+                                            $scope.projects.forEach(function(row, i) {
                                                 if (row.id === selectedRow.id) {
-                                                    $scope.wf_maker_projects[i].checked = 1;
+                                                    $scope.projects[i].checked = 1;
                                                     $scope.selection[list.iterator] = {
                                                         id: row.id,
                                                         name: row.name
@@ -651,27 +652,27 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                     };
 
                                     $scope.$watch('selectedTemplate', () => {
-                                        $scope.wf_maker_projects.forEach(function(row, i) {
+                                        $scope.projects.forEach(function(row, i) {
                                             if(_.hasIn($scope, 'selectedTemplate.id') && row.id === $scope.selectedTemplate.id) {
-                                                $scope.wf_maker_projects[i].checked = 1;
+                                                $scope.projects[i].checked = 1;
                                             }
                                             else {
-                                                $scope.wf_maker_projects[i].checked = 0;
+                                                $scope.projects[i].checked = 0;
                                             }
                                         });
                                     });
 
                                     $scope.$watch('activeTab', () => {
                                         if(!$scope.activeTab || $scope.activeTab !== "project_sync") {
-                                            $scope.wf_maker_projects.forEach(function(row, i) {
-                                                $scope.wf_maker_projects[i].checked = 0;
+                                            $scope.projects.forEach(function(row, i) {
+                                                $scope.projects[i].checked = 0;
                                             });
                                         }
                                     });
 
                                     $scope.$on('clearWorkflowLists', function() {
-                                        $scope.wf_maker_projects.forEach(function(row, i) {
-                                            $scope.wf_maker_projects[i].checked = 0;
+                                        $scope.projects.forEach(function(row, i) {
+                                            $scope.projects[i].checked = 0;
                                         });
                                     });
                                 }
@@ -697,8 +698,8 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                 return qs.search(path, $stateParams[`${list.iterator}_search`]);
                             }
                         ],
-                        WorkflowMakerJobTemplateList: ['TemplateList', 'i18n',
-                            (TemplateList, i18n) => {
+                        WorkflowMakerJobTemplateList: ['TemplateList',
+                            (TemplateList) => {
                                 let list = _.cloneDeep(TemplateList);
                                 delete list.actions;
                                 delete list.fields.type;
@@ -706,19 +707,16 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                 delete list.fields.smart_status;
                                 delete list.fields.labels;
                                 delete list.fieldActions;
-                                list.name = 'wf_maker_templates';
-                                list.iterator = 'wf_maker_template';
                                 list.fields.name.columnClass = "col-md-8";
-                                list.fields.name.tag = i18n._('WORKFLOW');
-                                list.fields.name.showTag = "{{wf_maker_template.type === 'workflow_job_template'}}";
                                 list.disableRow = "{{ !workflowJobTemplateObj.summary_fields.user_capabilities.edit }}";
                                 list.disableRowValue = '!workflowJobTemplateObj.summary_fields.user_capabilities.edit';
-                                list.basePath = 'unified_job_templates';
+                                list.iterator = 'job_template';
+                                list.name = 'job_templates';
+                                list.basePath = "job_templates";
                                 list.fields.info = {
                                     ngInclude: "'/static/partials/job-template-details.html'",
                                     type: 'template',
                                     columnClass: 'col-md-3',
-                                    infoHeaderClass: 'col-md-3',
                                     label: '',
                                     nosort: true
                                 };
@@ -734,8 +732,6 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                                 delete list.fields.status;
                                 delete list.fields.scm_type;
                                 delete list.fields.last_updated;
-                                list.name = 'wf_maker_projects';
-                                list.iterator = 'wf_maker_project';
                                 list.fields.name.columnClass = "col-md-11";
                                 list.maxVisiblePages = 5;
                                 list.searchBarFullWidth = true;
@@ -748,8 +744,6 @@ angular.module('templates', [surveyMaker.name, jobTemplates.name, labels.name, p
                         WorkflowInventorySourcesList: ['InventorySourcesList',
                             (InventorySourcesList) => {
                                 let list = _.cloneDeep(InventorySourcesList);
-                                list.name = 'wf_maker_inventory_sources';
-                                list.iterator = 'wf_maker_inventory_source';
                                 list.maxVisiblePages = 5;
                                 list.searchBarFullWidth = true;
                                 list.disableRow = "{{ !workflowJobTemplateObj.summary_fields.user_capabilities.edit }}";

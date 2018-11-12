@@ -18,7 +18,7 @@ import six
 # Django
 from django.conf import settings
 from django.core.exceptions import FieldError, ObjectDoesNotExist
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db import IntegrityError, transaction, connection
 from django.shortcuts import get_object_or_404
 from django.utils.encoding import smart_text
@@ -35,7 +35,7 @@ from django.utils.translation import ugettext_lazy as _
 # Django REST Framework
 from rest_framework.exceptions import PermissionDenied, ParseError
 from rest_framework.parsers import FormParser
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated, SAFE_METHODS
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from rest_framework.views import exception_handler
@@ -100,42 +100,6 @@ from awx.api.views.mixin import (
     InstanceGroupMembershipMixin,
     RelatedJobsPreventDeleteMixin,
     OrganizationCountsMixin,
-    ControlledByScmMixin,
-)
-from awx.api.views.organization import ( # noqa
-    OrganizationList,
-    OrganizationDetail,
-    OrganizationInventoriesList,
-    OrganizationUsersList,
-    OrganizationAdminsList,
-    OrganizationProjectsList,
-    OrganizationWorkflowJobTemplatesList,
-    OrganizationTeamsList,
-    OrganizationActivityStreamList,
-    OrganizationNotificationTemplatesList,
-    OrganizationNotificationTemplatesAnyList,
-    OrganizationNotificationTemplatesErrorList,
-    OrganizationNotificationTemplatesSuccessList,
-    OrganizationInstanceGroupsList,
-    OrganizationAccessList,
-    OrganizationObjectRolesList,
-)
-from awx.api.views.inventory import ( # noqa
-    InventoryList,
-    InventoryDetail,
-    InventoryUpdateEventsList,
-    InventoryScriptList,
-    InventoryScriptDetail,
-    InventoryScriptObjectRolesList,
-    InventoryScriptCopy,
-    InventoryList,
-    InventoryDetail,
-    InventoryActivityStreamList,
-    InventoryInstanceGroupsList,
-    InventoryAccessList,
-    InventoryObjectRolesList,
-    InventoryJobTemplateList,
-    InventoryCopy,
 )
 
 logger = logging.getLogger('awx.api.views')
@@ -780,6 +744,213 @@ class AuthView(APIView):
         return Response(data)
 
 
+class OrganizationList(OrganizationCountsMixin, ListCreateAPIView):
+
+    model = Organization
+    serializer_class = OrganizationSerializer
+
+    def get_queryset(self):
+        qs = Organization.accessible_objects(self.request.user, 'read_role')
+        qs = qs.select_related('admin_role', 'auditor_role', 'member_role', 'read_role')
+        qs = qs.prefetch_related('created_by', 'modified_by')
+        return qs
+
+    def create(self, request, *args, **kwargs):
+        """Create a new organzation.
+
+        If there is already an organization and the license of this
+        instance does not permit multiple organizations, then raise
+        LicenseForbids.
+        """
+        # Sanity check: If the multiple organizations feature is disallowed
+        # by the license, then we are only willing to create this organization
+        # if no organizations exist in the system.
+        if (not feature_enabled('multiple_organizations') and
+                self.model.objects.exists()):
+            raise LicenseForbids(_('Your license only permits a single '
+                                   'organization to exist.'))
+
+        # Okay, create the organization as usual.
+        return super(OrganizationList, self).create(request, *args, **kwargs)
+
+
+class OrganizationDetail(RelatedJobsPreventDeleteMixin, RetrieveUpdateDestroyAPIView):
+
+    model = Organization
+    serializer_class = OrganizationSerializer
+
+    def get_serializer_context(self, *args, **kwargs):
+        full_context = super(OrganizationDetail, self).get_serializer_context(*args, **kwargs)
+
+        if not hasattr(self, 'kwargs') or 'pk' not in self.kwargs:
+            return full_context
+        org_id = int(self.kwargs['pk'])
+
+        org_counts = {}
+        access_kwargs = {'accessor': self.request.user, 'role_field': 'read_role'}
+        direct_counts = Organization.objects.filter(id=org_id).annotate(
+            users=Count('member_role__members', distinct=True),
+            admins=Count('admin_role__members', distinct=True)
+        ).values('users', 'admins')
+
+        if not direct_counts:
+            return full_context
+
+        org_counts = direct_counts[0]
+        org_counts['inventories'] = Inventory.accessible_objects(**access_kwargs).filter(
+            organization__id=org_id).count()
+        org_counts['teams'] = Team.accessible_objects(**access_kwargs).filter(
+            organization__id=org_id).count()
+        org_counts['projects'] = Project.accessible_objects(**access_kwargs).filter(
+            organization__id=org_id).count()
+        org_counts['job_templates'] = JobTemplate.accessible_objects(**access_kwargs).filter(
+            project__organization__id=org_id).count()
+
+        full_context['related_field_counts'] = {}
+        full_context['related_field_counts'][org_id] = org_counts
+
+        return full_context
+
+
+class OrganizationInventoriesList(SubListAPIView):
+
+    model = Inventory
+    serializer_class = InventorySerializer
+    parent_model = Organization
+    relationship = 'inventories'
+
+
+class BaseUsersList(SubListCreateAttachDetachAPIView):
+    def post(self, request, *args, **kwargs):
+        ret = super(BaseUsersList, self).post( request, *args, **kwargs)
+        if ret.status_code != 201:
+            return ret
+        try:
+            if ret.data is not None and request.data.get('is_system_auditor', False):
+                # This is a faux-field that just maps to checking the system
+                # auditor role member list.. unfortunately this means we can't
+                # set it on creation, and thus needs to be set here.
+                user = User.objects.get(id=ret.data['id'])
+                user.is_system_auditor = request.data['is_system_auditor']
+                ret.data['is_system_auditor'] = request.data['is_system_auditor']
+        except AttributeError as exc:
+            print(exc)
+            pass
+        return ret
+
+
+class OrganizationUsersList(BaseUsersList):
+
+    model = User
+    serializer_class = UserSerializer
+    parent_model = Organization
+    relationship = 'member_role.members'
+
+
+class OrganizationAdminsList(BaseUsersList):
+
+    model = User
+    serializer_class = UserSerializer
+    parent_model = Organization
+    relationship = 'admin_role.members'
+
+
+class OrganizationProjectsList(SubListCreateAttachDetachAPIView):
+
+    model = Project
+    serializer_class = ProjectSerializer
+    parent_model = Organization
+    relationship = 'projects'
+    parent_key = 'organization'
+
+
+class OrganizationWorkflowJobTemplatesList(SubListCreateAttachDetachAPIView):
+
+    model = WorkflowJobTemplate
+    serializer_class = WorkflowJobTemplateSerializer
+    parent_model = Organization
+    relationship = 'workflows'
+    parent_key = 'organization'
+
+
+class OrganizationTeamsList(SubListCreateAttachDetachAPIView):
+
+    model = Team
+    serializer_class = TeamSerializer
+    parent_model = Organization
+    relationship = 'teams'
+    parent_key = 'organization'
+
+
+class OrganizationActivityStreamList(ActivityStreamEnforcementMixin, SubListAPIView):
+
+    model = ActivityStream
+    serializer_class = ActivityStreamSerializer
+    parent_model = Organization
+    relationship = 'activitystream_set'
+    search_fields = ('changes',)
+
+
+class OrganizationNotificationTemplatesList(SubListCreateAttachDetachAPIView):
+
+    model = NotificationTemplate
+    serializer_class = NotificationTemplateSerializer
+    parent_model = Organization
+    relationship = 'notification_templates'
+    parent_key = 'organization'
+
+
+class OrganizationNotificationTemplatesAnyList(SubListCreateAttachDetachAPIView):
+
+    model = NotificationTemplate
+    serializer_class = NotificationTemplateSerializer
+    parent_model = Organization
+    relationship = 'notification_templates_any'
+
+
+class OrganizationNotificationTemplatesErrorList(SubListCreateAttachDetachAPIView):
+
+    model = NotificationTemplate
+    serializer_class = NotificationTemplateSerializer
+    parent_model = Organization
+    relationship = 'notification_templates_error'
+
+
+class OrganizationNotificationTemplatesSuccessList(SubListCreateAttachDetachAPIView):
+
+    model = NotificationTemplate
+    serializer_class = NotificationTemplateSerializer
+    parent_model = Organization
+    relationship = 'notification_templates_success'
+
+
+class OrganizationInstanceGroupsList(SubListAttachDetachAPIView):
+
+    model = InstanceGroup
+    serializer_class = InstanceGroupSerializer
+    parent_model = Organization
+    relationship = 'instance_groups'
+
+
+class OrganizationAccessList(ResourceAccessList):
+
+    model = User # needs to be User for AccessLists's
+    parent_model = Organization
+
+
+class OrganizationObjectRolesList(SubListAPIView):
+
+    model = Role
+    serializer_class = RoleSerializer
+    parent_model = Organization
+    search_fields = ('role_field', 'content_type__model',)
+
+    def get_queryset(self):
+        po = self.get_parent_object()
+        content_type = ContentType.objects.get_for_model(self.parent_model)
+        return Role.objects.filter(content_type=content_type, object_id=po.pk)
+
+
 class TeamList(ListCreateAPIView):
 
     model = Team
@@ -1082,6 +1253,18 @@ class SystemJobEventsList(SubListAPIView):
         return super(SystemJobEventsList, self).finalize_response(request, response, *args, **kwargs)
 
 
+class InventoryUpdateEventsList(SubListAPIView):
+
+    model = InventoryUpdateEvent
+    serializer_class = InventoryUpdateEventSerializer
+    parent_model = InventoryUpdate
+    relationship = 'inventory_update_events'
+    view_name = _('Inventory Update Events List')
+    search_fields = ('stdout',)
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        response['X-UI-Max-Events'] = settings.MAX_UI_JOB_EVENTS
+        return super(InventoryUpdateEventsList, self).finalize_response(request, response, *args, **kwargs)
 
 
 class ProjectUpdateCancel(RetrieveAPIView):
@@ -1637,6 +1820,177 @@ class CredentialCopy(CopyAPIView):
 
     model = Credential
     copy_return_serializer_class = CredentialSerializer
+
+
+class InventoryScriptList(ListCreateAPIView):
+
+    model = CustomInventoryScript
+    serializer_class = CustomInventoryScriptSerializer
+
+
+class InventoryScriptDetail(RetrieveUpdateDestroyAPIView):
+
+    model = CustomInventoryScript
+    serializer_class = CustomInventoryScriptSerializer
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        can_delete = request.user.can_access(self.model, 'delete', instance)
+        if not can_delete:
+            raise PermissionDenied(_("Cannot delete inventory script."))
+        for inv_src in InventorySource.objects.filter(source_script=instance):
+            inv_src.source_script = None
+            inv_src.save()
+        return super(InventoryScriptDetail, self).destroy(request, *args, **kwargs)
+
+
+class InventoryScriptObjectRolesList(SubListAPIView):
+
+    model = Role
+    serializer_class = RoleSerializer
+    parent_model = CustomInventoryScript
+    search_fields = ('role_field', 'content_type__model',)
+
+    def get_queryset(self):
+        po = self.get_parent_object()
+        content_type = ContentType.objects.get_for_model(self.parent_model)
+        return Role.objects.filter(content_type=content_type, object_id=po.pk)
+
+
+class InventoryScriptCopy(CopyAPIView):
+
+    model = CustomInventoryScript
+    copy_return_serializer_class = CustomInventoryScriptSerializer
+
+
+class InventoryList(ListCreateAPIView):
+
+    model = Inventory
+    serializer_class = InventorySerializer
+
+    def get_queryset(self):
+        qs = Inventory.accessible_objects(self.request.user, 'read_role')
+        qs = qs.select_related('admin_role', 'read_role', 'update_role', 'use_role', 'adhoc_role')
+        qs = qs.prefetch_related('created_by', 'modified_by', 'organization')
+        return qs
+
+
+class ControlledByScmMixin(object):
+    '''
+    Special method to reset SCM inventory commit hash
+    if anything that it manages changes.
+    '''
+
+    def _reset_inv_src_rev(self, obj):
+        if self.request.method in SAFE_METHODS or not obj:
+            return
+        project_following_sources = obj.inventory_sources.filter(
+            update_on_project_update=True, source='scm')
+        if project_following_sources:
+            # Allow inventory changes unrelated to variables
+            if self.model == Inventory and (
+                    not self.request or not self.request.data or
+                    parse_yaml_or_json(self.request.data.get('variables', '')) == parse_yaml_or_json(obj.variables)):
+                return
+            project_following_sources.update(scm_last_revision='')
+
+    def get_object(self):
+        obj = super(ControlledByScmMixin, self).get_object()
+        self._reset_inv_src_rev(obj)
+        return obj
+
+    def get_parent_object(self):
+        obj = super(ControlledByScmMixin, self).get_parent_object()
+        self._reset_inv_src_rev(obj)
+        return obj
+
+
+class InventoryDetail(RelatedJobsPreventDeleteMixin, ControlledByScmMixin, RetrieveUpdateDestroyAPIView):
+
+    model = Inventory
+    serializer_class = InventoryDetailSerializer
+
+    def update(self, request, *args, **kwargs):
+        obj = self.get_object()
+        kind = self.request.data.get('kind') or kwargs.get('kind')
+
+        # Do not allow changes to an Inventory kind.
+        if kind is not None and obj.kind != kind:
+            return self.http_method_not_allowed(request, *args, **kwargs)
+        return super(InventoryDetail, self).update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        obj = self.get_object()
+        if not request.user.can_access(self.model, 'delete', obj):
+            raise PermissionDenied()
+        self.check_related_active_jobs(obj)  # related jobs mixin
+        try:
+            obj.schedule_deletion(getattr(request.user, 'id', None))
+            return Response(status=status.HTTP_202_ACCEPTED)
+        except RuntimeError as e:
+            return Response(dict(error=_("{0}".format(e))), status=status.HTTP_400_BAD_REQUEST)
+
+
+class InventoryActivityStreamList(ActivityStreamEnforcementMixin, SubListAPIView):
+
+    model = ActivityStream
+    serializer_class = ActivityStreamSerializer
+    parent_model = Inventory
+    relationship = 'activitystream_set'
+    search_fields = ('changes',)
+
+    def get_queryset(self):
+        parent = self.get_parent_object()
+        self.check_parent_access(parent)
+        qs = self.request.user.get_queryset(self.model)
+        return qs.filter(Q(inventory=parent) | Q(host__in=parent.hosts.all()) | Q(group__in=parent.groups.all()))
+
+
+class InventoryInstanceGroupsList(SubListAttachDetachAPIView):
+
+    model = InstanceGroup
+    serializer_class = InstanceGroupSerializer
+    parent_model = Inventory
+    relationship = 'instance_groups'
+
+
+class InventoryAccessList(ResourceAccessList):
+
+    model = User # needs to be User for AccessLists's
+    parent_model = Inventory
+
+
+class InventoryObjectRolesList(SubListAPIView):
+
+    model = Role
+    serializer_class = RoleSerializer
+    parent_model = Inventory
+    search_fields = ('role_field', 'content_type__model',)
+
+    def get_queryset(self):
+        po = self.get_parent_object()
+        content_type = ContentType.objects.get_for_model(self.parent_model)
+        return Role.objects.filter(content_type=content_type, object_id=po.pk)
+
+
+class InventoryJobTemplateList(SubListAPIView):
+
+    model = JobTemplate
+    serializer_class = JobTemplateSerializer
+    parent_model = Inventory
+    relationship = 'jobtemplates'
+
+    def get_queryset(self):
+        parent = self.get_parent_object()
+        self.check_parent_access(parent)
+        qs = self.request.user.get_queryset(self.model)
+        return qs.filter(inventory=parent)
+
+
+class InventoryCopy(CopyAPIView):
+
+    model = Inventory
+    copy_return_serializer_class = InventorySerializer
 
 
 class HostRelatedSearchMixin(object):

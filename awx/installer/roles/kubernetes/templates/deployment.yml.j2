@@ -140,10 +140,10 @@ spec:
             - name: "{{ kubernetes_deployment_name }}-confd"
               mountPath: "/etc/tower/conf.d/"
               readOnly: true
-
+              
             - name: projects
               mountPath: /var/lib/awx/projects
-
+              
           env:
             - name: DATABASE_USER
               value: {{ pg_username }}
@@ -166,7 +166,6 @@ spec:
             requests:
               memory: "{{ web_mem_request }}Gi"
               cpu: "{{ web_cpu_request }}m"
-        
         - name: {{ kubernetes_deployment_name }}-celery
           securityContext:
             privileged: true
@@ -183,11 +182,12 @@ spec:
               mountPath: "/etc/tower/conf.d/"
               readOnly: true
 
+            - name: fix-permission
+              mountPath: /etc/ansible
+
             - name: projects
               mountPath: /var/lib/awx/projects
 
-            - name: fix-permission
-              mountPath: /etc/ansible
           env:
             - name: AWX_SKIP_MIGRATIONS
               value: "1"
@@ -299,7 +299,7 @@ spec:
           hostPath:
             path: /root/ansible
             type: Directory
-
+            
         - name: projects
           hostPath:
             path: /root/projects
