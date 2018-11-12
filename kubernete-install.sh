@@ -73,10 +73,10 @@ echo "TAINT NODE DONE................................"
 ###Helm install###
 echo ""
 echo "HELM INSTALLING................................"
-wget https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz -P /root
-tar -zxvf /root/helm-v2.11.0-linux-amd64.tar.gz
-mv /root/linux-amd64/helm /usr/local/bin/helm
-rm -rf /root/helm-v2.11.0-linux-amd64.tar.gz /root/linux-amd64
+wget https://storage.googleapis.com/kubernetes-helm/helm-v2.11.0-linux-amd64.tar.gz 
+tar -zxvf helm-v2.11.0-linux-amd64.tar.gz
+mv linux-amd64/helm /usr/local/bin/helm
+rm -rf helm-v2.11.0-linux-amd64.tar.gz linux-amd64
 #curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > /root/get_helm.sh
 #chmod 700 /root/get_helm.sh
 #bash /root/get_helm.sh
