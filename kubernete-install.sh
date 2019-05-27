@@ -3,18 +3,17 @@
 ###docker-ce install###
 echo ""
 echo "DOCKER INSTALLING................................"
-apt update
-apt install --assume-yes apt-transport-https ca-certificates curl software-properties-common
 mv /etc/apt/sources.list /etc/apt/sources.list.old
 cat <<EOF >>/etc/apt/sources.list
 deb http://archive.ubuntu.com/ubuntu bionic main universe
 deb http://archive.ubuntu.com/ubuntu bionic-security main universe
 deb http://archive.ubuntu.com/ubuntu bionic-updates main universe
 EOF
+apt update
+apt install --assume-yes apt-transport-https ca-certificates curl software-properties-common
 #curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
 #apt-key fingerprint 0EBFCD88
 #add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
-apt update
 apt install -y docker.io=17.12.1-0ubuntu1 
 apt install nodejs npm -y
 npm install npm --global
@@ -35,11 +34,11 @@ echo "ANSIBLE DONE................................"
 echo ""
 echo "KUBERNETES INSTALLING................................"
 curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -
-cat <<EOF >>/etc/apt/sources.list.d/kubernetes.list
+cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb http://apt.kubernetes.io/ kubernetes-xenial main
 EOF
 apt-get update
-apt-get --assume-yes install kubelet kubeadm kubectl
+apt-get install -y kubelet kubeadm kubectl
 echo ""
 echo "KUBERNETES DONE................................"
 #apt-mark hold kubelet kubeadm kubectl
